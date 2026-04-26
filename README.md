@@ -28,10 +28,15 @@ User → Tail Service            — SSE live stream from Kafka
 distributed-logging/
 ├── go.work                    # Go workspace (ties all modules together)
 ├── docker-compose.yml         # Full local stack
-├── shared/                    # Shared models, Kafka interfaces, config helpers
-│   ├── models/log_entry.go
-│   ├── kafka/client.go
-│   └── config/env.go
+├── store/
+│   ├── kafka/                 # Canonical Kafka interfaces, models & franz-go driver
+│   │   ├── kafka/             # Producer/Consumer interfaces + Message type (shared)
+│   │   ├── models/            # LogEntry, LogBatch types (shared)
+│   │   ├── consumer/          # franz-go Consumer implementation
+│   │   └── producer/          # franz-go Producer implementation
+│   ├── opensearch/            # OpenSearch client
+│   ├── redis/                 # Redis client
+│   └── s3/                    # S3 client
 ├── log-agent/                 # Reads log files, ships batches to gateway
 ├── ingestion-gateway/         # HTTP entry point — auth, rate-limit, → Kafka
 ├── stream-processor/          # Kafka consumer — normalise, enrich, route
@@ -55,7 +60,7 @@ distributed-logging/
 
 ### Prerequisites
 
-- Go 1.22+
+- Go 1.25+
 - Docker + Docker Compose
 
 ### Run the full stack
@@ -119,7 +124,7 @@ Headers:
   X-API-Key: <key>
 ```
 
-Body: `LogBatch` JSON (see `shared/models/log_entry.go`)
+Body: `LogBatch` JSON (see `store/kafka/models/log_entry.go`)
 
 Response: `202 Accepted`
 
@@ -255,10 +260,10 @@ Global ordering is not guaranteed. Ordering is guaranteed per Kafka partition (t
 
 ## Swapping Stubs for Real Implementations
 
-The `shared/kafka` package defines `Producer` and `Consumer` interfaces. The services currently use `StubProducer` / `StubConsumer` (stdout logging) so they compile and run without a Kafka cluster. Replace these in each service's `main.go` with a real driver such as:
+The `store/kafka/kafka` package defines `Producer` and `Consumer` interfaces along with the `Message` type. These are the canonical types shared across all services. The services currently use `StubProducer` / `StubConsumer` (stdout logging) so they compile and run without a Kafka cluster. Replace these in each service's `main.go` with a real driver — a franz-go implementation is already provided in `store/kafka/producer` and `store/kafka/consumer`:
 
 - [confluent-kafka-go](https://github.com/confluentinc/confluent-kafka-go)
 - [segmentio/kafka-go](https://github.com/segmentio/kafka-go)
-- [twmb/franz-go](https://github.com/twmb/franz-go)
+- [twmb/franz-go](https://github.com/twmb/franz-go) ✓ already implemented in `store/kafka`
 
 Similarly, `query-api` stubs OpenSearch calls. Replace `queryHot` / `queryCold` with real [opensearch-go](https://github.com/opensearch-project/opensearch-go) calls.
