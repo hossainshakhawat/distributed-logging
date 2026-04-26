@@ -1,4 +1,4 @@
-go 1.22
+go 1.25.0
 
 use (
 	./alert-engine
@@ -6,6 +6,10 @@ use (
 	./log-agent
 	./query-api
 	./shared
+	./store/kafka
+	./store/opensearch
+	./store/redis
+	./store/s3
 	./stream-processor
 	./tail-service
 )

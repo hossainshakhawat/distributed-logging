@@ -6,11 +6,16 @@ import (
 
 	"github.com/distributed-logging/ingestion-gateway/internal/gateway"
 	"github.com/distributed-logging/shared/config"
-	"github.com/distributed-logging/shared/kafka"
+	kafkaproducer "github.com/distributed-logging/store-kafka/producer"
 )
 
 func main() {
-	producer := &kafka.StubProducer{} // swap with real Kafka producer in production
+	brokers := config.Getenv("KAFKA_BROKERS", "localhost:9092")
+	producer, err := kafkaproducer.NewFromEnv(brokers)
+	if err != nil {
+		log.Fatalf("kafka producer: %v", err)
+	}
+	defer producer.Close()
 
 	cfg := gateway.Config{
 		ListenAddr:   config.Getenv("LISTEN_ADDR", ":8080"),

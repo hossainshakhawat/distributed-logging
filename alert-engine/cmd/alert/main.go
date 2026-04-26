@@ -7,28 +7,30 @@ import (
 	"syscall"
 
 	"github.com/distributed-logging/alert-engine/internal/alert"
-	"github.com/distributed-logging/shared/kafka"
+	"github.com/distributed-logging/shared/config"
+	kafkaconsumer "github.com/distributed-logging/store-kafka/consumer"
 )
 
 func main() {
-	consumer := &kafka.StubConsumer{}
+	brokers := config.Getenv("KAFKA_BROKERS", "localhost:9092")
+	consumer := kafkaconsumer.NewFromEnv(brokers, "alert-engine")
 
 	rules := []alert.Rule{
 		{
-			Name:        "high-error-rate",
-			TenantID:    "*",
-			Level:       "ERROR",
-			Threshold:   100,
-			WindowSecs:  300,
-			Webhook:     "http://localhost:9000/alerts",
+			Name:       "high-error-rate",
+			TenantID:   "*",
+			Level:      "ERROR",
+			Threshold:  100,
+			WindowSecs: 300,
+			Webhook:    "http://localhost:9000/alerts",
 		},
 		{
-			Name:        "payment-failed",
-			TenantID:    "*",
+			Name:            "payment-failed",
+			TenantID:        "*",
 			MessageContains: "payment failed",
-			Threshold:   1,
-			WindowSecs:  60,
-			Webhook:     "http://localhost:9000/alerts",
+			Threshold:       1,
+			WindowSecs:      60,
+			Webhook:         "http://localhost:9000/alerts",
 		},
 	}
 

@@ -5,12 +5,13 @@ import (
 	"net/http"
 
 	"github.com/distributed-logging/shared/config"
-	"github.com/distributed-logging/shared/kafka"
+	kafkaconsumer "github.com/distributed-logging/store-kafka/consumer"
 	"github.com/distributed-logging/tail-service/internal/tail"
 )
 
 func main() {
-	consumer := &kafka.StubConsumer{}
+	brokers := config.Getenv("KAFKA_BROKERS", "localhost:9092")
+	consumer := kafkaconsumer.NewFromEnv(brokers, "tail-service")
 
 	cfg := tail.Config{
 		ListenAddr:        config.Getenv("LISTEN_ADDR", ":8082"),

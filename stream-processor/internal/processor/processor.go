@@ -9,29 +9,49 @@ import (
 
 	"github.com/distributed-logging/shared/kafka"
 	"github.com/distributed-logging/shared/models"
+	redisclient "github.com/distributed-logging/store-redis/client"
+	"github.com/distributed-logging/stream-processor/internal/archiver"
+	"github.com/distributed-logging/stream-processor/internal/indexer"
 )
 
 // Config holds stream processor settings.
 type Config struct {
 	ConsumerGroup string
 	DLQTopic      string
+	DedupTTL      time.Duration // how long to remember log IDs for dedup
 }
 
-// Processor reads raw log batches from Kafka, normalises them, and emits
-// normalised entries to logs-normalized. Invalid entries go to the DLQ.
+// Processor reads raw log batches from Kafka, normalises them, deduplicates,
+// publishes to logs-normalized, indexes to OpenSearch and archives to S3.
 type Processor struct {
 	cfg      Config
 	consumer kafka.Consumer
 	producer kafka.Producer
+	indexer  *indexer.Indexer
+	archiver *archiver.Archiver
+	dedup    *redisclient.Client
 	done     chan struct{}
 }
 
 // New creates a Processor.
-func New(cfg Config, consumer kafka.Consumer, producer kafka.Producer) *Processor {
+func New(
+	cfg Config,
+	consumer kafka.Consumer,
+	producer kafka.Producer,
+	idx *indexer.Indexer,
+	arch *archiver.Archiver,
+	dedup *redisclient.Client,
+) *Processor {
+	if cfg.DedupTTL == 0 {
+		cfg.DedupTTL = 5 * time.Minute
+	}
 	return &Processor{
 		cfg:      cfg,
 		consumer: consumer,
 		producer: producer,
+		indexer:  idx,
+		archiver: arch,
+		dedup:    dedup,
 		done:     make(chan struct{}),
 	}
 }
@@ -81,6 +101,18 @@ func (p *Processor) handle(ctx context.Context, msg *kafka.Message) {
 			p.sendDLQ(ctx, &kafka.Message{Value: raw}, "normalise failed")
 			continue
 		}
+
+		// Best-effort deduplication via Redis.
+		if normalised.LogID != "" && p.dedup != nil {
+			isNew, err := p.dedup.SetNX(ctx, "dedup:"+normalised.LogID, p.cfg.DedupTTL)
+			if err != nil {
+				log.Printf("processor: dedup check: %v", err)
+			} else if !isNew {
+				continue // duplicate — skip
+			}
+		}
+
+		// Publish to logs-normalized for alert-engine and tail-service.
 		out := kafka.Message{
 			Topic:     kafka.TopicLogsNormalized,
 			Key:       kafka.LogPartitionKey(normalised.TenantID, normalised.Service),
@@ -92,6 +124,16 @@ func (p *Processor) handle(ctx context.Context, msg *kafka.Message) {
 		}
 		if err := p.producer.Publish(ctx, out); err != nil {
 			log.Printf("processor: publish: %v", err)
+		}
+
+		// Index to OpenSearch (hot storage).
+		if p.indexer != nil {
+			p.indexer.Add(normalised)
+		}
+
+		// Archive to S3 (cold storage).
+		if p.archiver != nil {
+			p.archiver.Add(normalised)
 		}
 	}
 	p.consumer.Commit(ctx, msg)

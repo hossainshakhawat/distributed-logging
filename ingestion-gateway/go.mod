@@ -1,10 +1,20 @@
 module github.com/distributed-logging/ingestion-gateway
 
-go 1.22
+go 1.25.0
 
 require (
 	github.com/distributed-logging/shared v0.0.0
-	github.com/google/uuid v1.6.0
+	github.com/distributed-logging/store-kafka v0.0.0
 )
 
-replace github.com/distributed-logging/shared => ../shared
+require (
+	github.com/klauspost/compress v1.18.5 // indirect
+	github.com/pierrec/lz4/v4 v4.1.26 // indirect
+	github.com/twmb/franz-go v1.21.0 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.13.1 // indirect
+)
+
+replace (
+	github.com/distributed-logging/shared => ../shared
+	github.com/distributed-logging/store-kafka => ../store/kafka
+)
