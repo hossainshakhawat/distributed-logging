@@ -21,8 +21,19 @@ jobs:
       with:
         go-version: '1.25.0'
 
+    - name: Sync workspace
+      run: go work sync
+
     - name: Build
-      run: go build -v ./...
+      run: |
+        for mod in alert-engine ingestion-gateway log-agent query-api stream-processor tail-service store/kafka store/opensearch store/redis store/s3; do
+          echo "Building $mod..."
+          go build -v ./$mod/...
+        done
 
     - name: Test
-      run: go test -v ./...
+      run: |
+        for mod in alert-engine ingestion-gateway log-agent query-api stream-processor tail-service store/kafka store/opensearch store/redis store/s3; do
+          echo "Testing $mod..."
+          go test -v ./$mod/...
+        done
