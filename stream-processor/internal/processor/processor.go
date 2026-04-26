@@ -9,7 +9,6 @@ import (
 
 	"github.com/hossainshakhawat/distributed-logging/store-kafka/kafka"
 	"github.com/hossainshakhawat/distributed-logging/store-kafka/models"
-	redisclient "github.com/hossainshakhawat/distributed-logging/store-redis/client"
 	"github.com/hossainshakhawat/distributed-logging/stream-processor/internal/archiver"
 	"github.com/hossainshakhawat/distributed-logging/stream-processor/internal/indexer"
 )
@@ -21,6 +20,11 @@ type Config struct {
 	DedupTTL      time.Duration // how long to remember log IDs for dedup
 }
 
+// DedupStore is the interface for deduplication checks, satisfied by *redisclient.Client.
+type DedupStore interface {
+	SetNX(ctx context.Context, key string, ttl time.Duration) (bool, error)
+}
+
 // Processor reads raw log batches from Kafka, normalises them, deduplicates,
 // publishes to logs-normalized, indexes to OpenSearch and archives to S3.
 type Processor struct {
@@ -29,7 +33,7 @@ type Processor struct {
 	producer kafka.Producer
 	indexer  *indexer.Indexer
 	archiver *archiver.Archiver
-	dedup    *redisclient.Client
+	dedup    DedupStore
 	done     chan struct{}
 }
 
@@ -40,7 +44,7 @@ func New(
 	producer kafka.Producer,
 	idx *indexer.Indexer,
 	arch *archiver.Archiver,
-	dedup *redisclient.Client,
+	dedup DedupStore,
 ) *Processor {
 	if cfg.DedupTTL == 0 {
 		cfg.DedupTTL = 5 * time.Minute
@@ -159,7 +163,13 @@ func (p *Processor) sendDLQ(ctx context.Context, msg *kafka.Message, reason stri
 		Reason  string          `json:"reason"`
 		Payload json.RawMessage `json:"payload"`
 	}
-	env := dlqEnvelope{Reason: reason, Payload: msg.Value}
+	payload := msg.Value
+	// Ensure the payload is valid JSON; if not, encode it as a JSON string.
+	if !json.Valid(payload) {
+		quoted, _ := json.Marshal(string(payload))
+		payload = quoted
+	}
+	env := dlqEnvelope{Reason: reason, Payload: payload}
 	out := kafka.Message{Topic: p.cfg.DLQTopic}
 	if err := kafka.MarshalValue(&out, env); err != nil {
 		return

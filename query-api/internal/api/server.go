@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -10,6 +11,11 @@ import (
 	"github.com/hossainshakhawat/distributed-logging/store-kafka/models"
 	osclient "github.com/hossainshakhawat/distributed-logging/store-opensearch/client"
 )
+
+// Searcher is the interface for querying log storage, satisfied by *osclient.Client.
+type Searcher interface {
+	Search(ctx context.Context, q osclient.SearchQuery) (osclient.SearchResult, error)
+}
 
 // Config holds query API settings.
 type Config struct {
@@ -21,12 +27,12 @@ type Config struct {
 // Server is the HTTP query server.
 type Server struct {
 	cfg      Config
-	osClient *osclient.Client
+	osClient Searcher
 	mux      *http.ServeMux
 }
 
 // NewServer constructs and wires the server.
-func NewServer(cfg Config, osClient *osclient.Client) *Server {
+func NewServer(cfg Config, osClient Searcher) *Server {
 	s := &Server{cfg: cfg, osClient: osClient, mux: http.NewServeMux()}
 	s.mux.HandleFunc("/logs/search", s.handleSearch)
 	s.mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {

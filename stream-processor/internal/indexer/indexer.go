@@ -6,13 +6,17 @@ import (
 	"sync"
 	"time"
 
-	osclient "github.com/hossainshakhawat/distributed-logging/store-opensearch/client"
 	"github.com/hossainshakhawat/distributed-logging/store-kafka/models"
 )
 
+// BulkIndexer is the interface for bulk-indexing log entries, satisfied by *osclient.Client.
+type BulkIndexer interface {
+	IndexBulk(ctx context.Context, entries []models.LogEntry) error
+}
+
 // Indexer batches log entries and bulk-indexes them to OpenSearch.
 type Indexer struct {
-	client      *osclient.Client
+	client      BulkIndexer
 	buf         []models.LogEntry
 	mu          sync.Mutex
 	flushSize   int
@@ -22,7 +26,7 @@ type Indexer struct {
 
 // New creates an Indexer that flushes when batchSize entries accumulate
 // or every flushInterval, whichever comes first.
-func New(client *osclient.Client, batchSize int, flushInterval time.Duration) *Indexer {
+func New(client BulkIndexer, batchSize int, flushInterval time.Duration) *Indexer {
 	idx := &Indexer{
 		client:    client,
 		flushSize: batchSize,

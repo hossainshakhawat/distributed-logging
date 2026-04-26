@@ -12,9 +12,14 @@ import (
 	s3client "github.com/hossainshakhawat/distributed-logging/store-s3/client"
 )
 
+// Uploader is the interface for uploading log entries to object storage, satisfied by *s3client.Client.
+type Uploader interface {
+	Upload(ctx context.Context, key string, entries []models.LogEntry) error
+}
+
 // Archiver batches log entries and uploads them to S3 as gzip-compressed NDJSON.
 type Archiver struct {
-	client    *s3client.Client
+	client    Uploader
 	buf       []models.LogEntry
 	mu        sync.Mutex
 	partSeq   atomic.Int64
@@ -25,7 +30,7 @@ type Archiver struct {
 
 // New creates an Archiver that flushes to S3 when batchSize entries accumulate
 // or every flushInterval, whichever comes first.
-func New(client *s3client.Client, batchSize int, flushInterval time.Duration) *Archiver {
+func New(client Uploader, batchSize int, flushInterval time.Duration) *Archiver {
 	a := &Archiver{
 		client:    client,
 		batchSize: batchSize,
