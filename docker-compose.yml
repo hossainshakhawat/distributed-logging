@@ -1,0 +1,100 @@
+version: "3.9"
+
+services:
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on: [zookeeper]
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 6
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+
+  opensearch:
+    image: opensearchproject/opensearch:2.13.0
+    environment:
+      - discovery.type=single-node
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Admin@12345
+    ports:
+      - "9200:9200"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # ── Services ─────────────────────────────────────────────────────────────────
+  ingestion-gateway:
+    build:
+      context: .
+      dockerfile: ingestion-gateway/Dockerfile
+    depends_on: [kafka]
+    environment:
+      LISTEN_ADDR: ":8080"
+    ports:
+      - "8080:8080"
+
+  stream-processor:
+    build:
+      context: .
+      dockerfile: stream-processor/Dockerfile
+    depends_on: [kafka, opensearch]
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      OPENSEARCH_ADDR: http://opensearch:9200
+
+  query-api:
+    build:
+      context: .
+      dockerfile: query-api/Dockerfile
+    depends_on: [opensearch]
+    environment:
+      LISTEN_ADDR: ":8081"
+      OPENSEARCH_ADDR: http://opensearch:9200
+    ports:
+      - "8081:8081"
+
+  tail-service:
+    build:
+      context: .
+      dockerfile: tail-service/Dockerfile
+    depends_on: [kafka]
+    environment:
+      LISTEN_ADDR: ":8082"
+      KAFKA_BROKERS: kafka:9092
+    ports:
+      - "8082:8082"
+
+  alert-engine:
+    build:
+      context: .
+      dockerfile: alert-engine/Dockerfile
+    depends_on: [kafka]
+    environment:
+      KAFKA_BROKERS: kafka:9092
+
+  log-agent:
+    build:
+      context: .
+      dockerfile: log-agent/Dockerfile
+    depends_on: [ingestion-gateway]
+    environment:
+      GATEWAY_URL: http://ingestion-gateway:8080
+      TENANT_ID: tenant-a
+      SERVICE_NAME: demo-app
+      ENVIRONMENT: development
+      LOG_PATH: /var/log/app/app.log
+    volumes:
+      - ./demo-logs:/var/log/app

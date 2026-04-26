@@ -1,0 +1,12 @@
+# Binaries
+bin/
+dist/
+
+# Go workspace sum
+go.work.sum
+
+# OS
+.DS_Store
+
+# Demo logs volume
+demo-logs/

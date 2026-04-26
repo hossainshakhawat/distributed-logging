@@ -1,0 +1,11 @@
+go 1.22
+
+use (
+	./alert-engine
+	./ingestion-gateway
+	./log-agent
+	./query-api
+	./shared
+	./stream-processor
+	./tail-service
+)
