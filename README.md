@@ -197,39 +197,232 @@ Partition key: `tenantID|serviceName`
 
 ---
 
-## Configuration (Environment Variables)
+## Configuration
 
-All services are configured entirely through environment variables.
+Each service reads a `config.yml` file at startup and supports environment variable overrides for every key. Nested YAML keys map to environment variables by replacing `.` and `-` with `_` and uppercasing (e.g. `kafka.brokers` → `KAFKA_BROKERS`).
+
+A custom config file path can be forced with the `CONFIG_FILE` environment variable.
+
+---
 
 ### log-agent
 
-| Variable | Default | Description |
+Config file: `log-agent/config.yml`
+
+```yaml
+gateway_url: http://localhost:8080
+tenant_id: default
+service_name: unknown
+environment: production
+log_paths:
+  - /var/log/app/app.log
+batch_size: 100
+flush_interval_secs: 5
+buffer_dir: /tmp/log-agent-buffer
+```
+
+| Key / Env var | Default | Description |
 |---|---|---|
-| `GATEWAY_URL` | `http://localhost:8080` | Ingestion gateway base URL |
-| `TENANT_ID` | `default` | Tenant identifier |
-| `SERVICE_NAME` | `unknown` | Logical service name |
-| `ENVIRONMENT` | `production` | Deployment environment |
-| `LOG_PATH` | `/var/log/app/app.log` | Log file to tail |
-| `BUFFER_DIR` | `/tmp/log-agent-buffer` | Local disk buffer for offline mode |
+| `gateway_url` / `GATEWAY_URL` | `http://localhost:8080` | Ingestion gateway base URL |
+| `tenant_id` / `TENANT_ID` | `default` | Tenant identifier |
+| `service_name` / `SERVICE_NAME` | `unknown` | Logical service name |
+| `environment` / `ENVIRONMENT` | `production` | Deployment environment |
+| `log_paths` / `LOG_PATH` | `[/var/log/app/app.log]` | Log files to tail |
+| `batch_size` / `BATCH_SIZE` | `100` | Entries per batch before forced flush |
+| `flush_interval_secs` / `FLUSH_INTERVAL_SECS` | `5` | Periodic flush interval (seconds) |
+| `buffer_dir` / `BUFFER_DIR` | `/tmp/log-agent-buffer` | Local disk buffer for offline mode |
+
+---
 
 ### ingestion-gateway
 
-| Variable | Default | Description |
+Config file: `ingestion-gateway/config.yml`
+
+```yaml
+listen_addr: ":8080"
+rate_limit_rps: 1000
+
+kafka:
+  brokers:
+    - localhost:9092
+  topics:
+    logs_raw: logs-raw
+
+# Tenant → API key pairs (override at deploy time)
+api_keys:
+  tenant-a: secret-a
+  tenant-b: secret-b
+```
+
+| Key / Env var | Default | Description |
 |---|---|---|
-| `LISTEN_ADDR` | `:8080` | HTTP listen address |
+| `listen_addr` / `LISTEN_ADDR` | `:8080` | HTTP listen address |
+| `rate_limit_rps` / `RATE_LIMIT_RPS` | `1000` | Per-tenant requests per second |
+| `kafka.brokers` / `KAFKA_BROKERS` | `localhost:9092` | Comma-separated broker list |
+| `kafka.topics.logs_raw` / `KAFKA_TOPICS_LOGS_RAW` | `logs-raw` | Topic for raw log batches |
+| `api_keys.<tenant>` | — | Map of tenantID → API key |
+
+---
+
+### stream-processor
+
+Config file: `stream-processor/config.yml`
+
+```yaml
+kafka:
+  brokers:
+    - localhost:9092
+  consumer_group: stream-processor
+  topics:
+    logs_raw: logs-raw
+    logs_normalized: logs-normalized
+    dead_letter: logs-dead-letter
+
+opensearch:
+  addresses:
+    - http://localhost:9200
+  username: admin
+  password: Admin@12345
+
+s3:
+  bucket: distributed-logs
+  region: us-east-1
+  endpoint: ""          # set to MinIO/LocalStack URL for local dev
+
+redis:
+  addr: localhost:6379
+  password: ""
+  db: 0
+
+indexer:
+  batch_size: 500
+  flush_interval_seconds: 5
+
+archiver:
+  batch_size: 1000
+  flush_interval_seconds: 30
+
+dedup_ttl_seconds: 300
+```
+
+| Key / Env var | Default | Description |
+|---|---|---|
+| `kafka.brokers` / `KAFKA_BROKERS` | `localhost:9092` | Comma-separated broker list |
+| `kafka.consumer_group` / `KAFKA_CONSUMER_GROUP` | `stream-processor` | Consumer group ID |
+| `kafka.topics.logs_raw` / `KAFKA_TOPICS_LOGS_RAW` | `logs-raw` | Topic to consume raw batches from |
+| `kafka.topics.logs_normalized` / `KAFKA_TOPICS_LOGS_NORMALIZED` | `logs-normalized` | Topic to publish normalised entries to |
+| `kafka.topics.dead_letter` / `KAFKA_TOPICS_DEAD_LETTER` | `logs-dead-letter` | Dead-letter topic for unparseable messages |
+| `opensearch.addresses` / `OPENSEARCH_ADDRESSES` | `http://localhost:9200` | OpenSearch endpoint(s) |
+| `opensearch.username` / `OPENSEARCH_USERNAME` | `admin` | OpenSearch username |
+| `opensearch.password` / `OPENSEARCH_PASSWORD` | `Admin@12345` | OpenSearch password |
+| `s3.bucket` / `S3_BUCKET` | `distributed-logs` | S3 bucket for cold archive |
+| `s3.region` / `S3_REGION` | `us-east-1` | AWS region |
+| `s3.endpoint` / `S3_ENDPOINT` | `""` | Custom endpoint (MinIO / LocalStack) |
+| `redis.addr` / `REDIS_ADDR` | `localhost:6379` | Redis address for dedup cache |
+| `redis.password` / `REDIS_PASSWORD` | `""` | Redis password |
+| `redis.db` / `REDIS_DB` | `0` | Redis DB index |
+| `indexer.batch_size` / `INDEXER_BATCH_SIZE` | `500` | Entries per OpenSearch bulk request |
+| `indexer.flush_interval_seconds` / `INDEXER_FLUSH_INTERVAL_SECONDS` | `5` | Indexer flush interval |
+| `archiver.batch_size` / `ARCHIVER_BATCH_SIZE` | `1000` | Entries per S3 upload |
+| `archiver.flush_interval_seconds` / `ARCHIVER_FLUSH_INTERVAL_SECONDS` | `30` | Archiver flush interval |
+| `dedup_ttl_seconds` / `DEDUP_TTL_SECONDS` | `300` | Redis TTL for dedup keys (seconds) |
+
+---
 
 ### query-api
 
-| Variable | Default | Description |
+Config file: `query-api/config.yml`
+
+```yaml
+listen_addr: ":8081"
+hot_retention_days: 7
+
+opensearch:
+  addresses:
+    - http://localhost:9200
+  username: admin
+  password: Admin@12345
+
+api_keys:
+  tenant-a: secret-a
+  tenant-b: secret-b
+```
+
+| Key / Env var | Default | Description |
 |---|---|---|
-| `LISTEN_ADDR` | `:8081` | HTTP listen address |
-| `OPENSEARCH_ADDR` | `http://localhost:9200` | OpenSearch endpoint |
+| `listen_addr` / `LISTEN_ADDR` | `:8081` | HTTP listen address |
+| `hot_retention_days` / `HOT_RETENTION_DAYS` | `7` | Days considered "hot" (served from OpenSearch) |
+| `opensearch.addresses` / `OPENSEARCH_ADDRESSES` | `http://localhost:9200` | OpenSearch endpoint(s) |
+| `opensearch.username` / `OPENSEARCH_USERNAME` | `admin` | OpenSearch username |
+| `opensearch.password` / `OPENSEARCH_PASSWORD` | `Admin@12345` | OpenSearch password |
+| `api_keys.<tenant>` | — | Map of tenantID → API key |
+
+---
 
 ### tail-service
 
-| Variable | Default | Description |
+Config file: `tail-service/config.yml`
+
+```yaml
+listen_addr: ":8082"
+max_active_sessions: 500
+
+kafka:
+  brokers:
+    - localhost:9092
+  consumer_group: tail-service
+  topics:
+    logs_normalized: logs-normalized
+```
+
+| Key / Env var | Default | Description |
 |---|---|---|
-| `LISTEN_ADDR` | `:8082` | HTTP listen address |
+| `listen_addr` / `LISTEN_ADDR` | `:8082` | HTTP listen address |
+| `max_active_sessions` / `MAX_ACTIVE_SESSIONS` | `500` | Max concurrent SSE connections |
+| `kafka.brokers` / `KAFKA_BROKERS` | `localhost:9092` | Comma-separated broker list |
+| `kafka.consumer_group` / `KAFKA_CONSUMER_GROUP` | `tail-service` | Consumer group ID |
+| `kafka.topics.logs_normalized` / `KAFKA_TOPICS_LOGS_NORMALIZED` | `logs-normalized` | Topic to stream entries from |
+
+---
+
+### alert-engine
+
+Config file: `alert-engine/config.yml`
+
+```yaml
+kafka:
+  brokers:
+    - localhost:9092
+  consumer_group: alert-engine
+  topics:
+    logs_normalized: logs-normalized
+
+rules:
+  - name: high-error-rate
+    tenant_id: "*"          # "*" matches any tenant
+    level: ERROR
+    threshold: 100
+    window_seconds: 300
+    webhook: http://localhost:9000/alerts
+```
+
+| Key / Env var | Default | Description |
+|---|---|---|
+| `kafka.brokers` / `KAFKA_BROKERS` | `localhost:9092` | Comma-separated broker list |
+| `kafka.consumer_group` / `KAFKA_CONSUMER_GROUP` | `alert-engine` | Consumer group ID |
+| `kafka.topics.logs_normalized` / `KAFKA_TOPICS_LOGS_NORMALIZED` | `logs-normalized` | Topic to evaluate rules against |
+
+**Rule fields:**
+
+| Field | Description |
+|---|---|
+| `name` | Rule identifier (used in alert payload) |
+| `tenant_id` | Tenant to match; `"*"` matches any |
+| `level` | Log level filter (`ERROR`, `WARN`, etc.); empty = any |
+| `message_contains` | Substring filter on message; empty = any |
+| `threshold` | Number of matching events in the window to fire |
+| `window_seconds` | Tumbling window size in seconds |
+| `webhook` | URL to POST alert notification to |
 
 ---
 
