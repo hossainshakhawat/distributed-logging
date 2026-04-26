@@ -6,32 +6,33 @@ import (
 	"os/signal"
 	"syscall"
 
+	aeconfig "github.com/distributed-logging/alert-engine/config"
 	"github.com/distributed-logging/alert-engine/internal/alert"
-	"github.com/distributed-logging/shared/config"
 	kafkaconsumer "github.com/distributed-logging/store-kafka/consumer"
 )
 
 func main() {
-	brokers := config.Getenv("KAFKA_BROKERS", "localhost:9092")
-	consumer := kafkaconsumer.NewFromEnv(brokers, "alert-engine")
+	cfg, err := aeconfig.Load()
+	if err != nil {
+		log.Fatalf("config: %v", err)
+	}
 
-	rules := []alert.Rule{
-		{
-			Name:       "high-error-rate",
-			TenantID:   "*",
-			Level:      "ERROR",
-			Threshold:  100,
-			WindowSecs: 300,
-			Webhook:    "http://localhost:9000/alerts",
-		},
-		{
-			Name:            "payment-failed",
-			TenantID:        "*",
-			MessageContains: "payment failed",
-			Threshold:       1,
-			WindowSecs:      60,
-			Webhook:         "http://localhost:9000/alerts",
-		},
+	consumer := kafkaconsumer.New(kafkaconsumer.Config{
+		Brokers:       cfg.Kafka.Brokers,
+		ConsumerGroup: cfg.Kafka.ConsumerGroup,
+	})
+
+	rules := make([]alert.Rule, len(cfg.Rules))
+	for i, r := range cfg.Rules {
+		rules[i] = alert.Rule{
+			Name:            r.Name,
+			TenantID:        r.TenantID,
+			Level:           r.Level,
+			MessageContains: r.MessageContains,
+			Threshold:       r.Threshold,
+			WindowSecs:      r.WindowSecs,
+			Webhook:         r.Webhook,
+		}
 	}
 
 	engine := alert.NewEngine(consumer, rules)

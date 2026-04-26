@@ -1,0 +1,12 @@
+listen_addr: ":8081"
+hot_retention_days: 30
+
+opensearch:
+  addresses:
+    - http://localhost:9200
+  username: admin
+  password: Admin@12345
+
+# Tenant API key pairs.
+api_keys:
+  tenant-a: secret-a

@@ -6,5 +6,7 @@ COPY log-agent/ ./log-agent/
 RUN cd log-agent && go build -o /bin/log-agent ./cmd/agent
 
 FROM alpine:3.19
-COPY --from=builder /bin/log-agent /usr/local/bin/log-agent
-ENTRYPOINT ["log-agent"]
+WORKDIR /app
+COPY --from=builder /bin/log-agent /app/log-agent
+COPY log-agent/config.yml /app/config.yml
+ENTRYPOINT ["/app/log-agent"]

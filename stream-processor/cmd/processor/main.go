@@ -8,25 +8,32 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/distributed-logging/shared/config"
 	sharedkafka "github.com/distributed-logging/shared/kafka"
 	kafkaconsumer "github.com/distributed-logging/store-kafka/consumer"
 	kafkaproducer "github.com/distributed-logging/store-kafka/producer"
 	osclient "github.com/distributed-logging/store-opensearch/client"
 	redisclient "github.com/distributed-logging/store-redis/client"
 	s3client "github.com/distributed-logging/store-s3/client"
+	spconfig "github.com/distributed-logging/stream-processor/config"
 	"github.com/distributed-logging/stream-processor/internal/archiver"
 	"github.com/distributed-logging/stream-processor/internal/indexer"
 	"github.com/distributed-logging/stream-processor/internal/processor"
 )
 
 func main() {
-	brokers := config.Getenv("KAFKA_BROKERS", "localhost:9092")
+	cfg, err := spconfig.Load()
+	if err != nil {
+		log.Fatalf("config: %v", err)
+	}
 
 	// ── Kafka ──────────────────────────────────────────────────────────────
-	consumer := kafkaconsumer.NewFromEnv(brokers,
-		config.Getenv("CONSUMER_GROUP", "stream-processor"))
-	prod, err := kafkaproducer.NewFromEnv(brokers)
+	consumer := kafkaconsumer.New(kafkaconsumer.Config{
+		Brokers:       cfg.Kafka.Brokers,
+		ConsumerGroup: cfg.Kafka.ConsumerGroup,
+	})
+	prod, err := kafkaproducer.New(kafkaproducer.Config{
+		Brokers: cfg.Kafka.Brokers,
+	})
 	if err != nil {
 		log.Fatalf("kafka producer: %v", err)
 	}
@@ -34,42 +41,51 @@ func main() {
 
 	// ── OpenSearch indexer ─────────────────────────────────────────────────
 	osClient, err := osclient.New(osclient.Config{
-		Addresses: []string{config.Getenv("OPENSEARCH_ADDR", "http://localhost:9200")},
-		Username:  config.Getenv("OPENSEARCH_USER", "admin"),
-		Password:  config.Getenv("OPENSEARCH_PASS", "Admin@12345"),
+		Addresses: cfg.OpenSearch.Addresses,
+		Username:  cfg.OpenSearch.Username,
+		Password:  cfg.OpenSearch.Password,
 	})
 	if err != nil {
 		log.Fatalf("opensearch client: %v", err)
 	}
-	idx := indexer.New(osClient, 500, 5*time.Second)
+	idx := indexer.New(
+		osClient,
+		cfg.Indexer.BatchSize,
+		time.Duration(cfg.Indexer.FlushIntervalSecs)*time.Second,
+	)
 	defer idx.Stop()
 
 	// ── S3 archiver ────────────────────────────────────────────────────────
-	s3Cfg := s3client.Config{
-		Bucket:   config.Getenv("S3_BUCKET", "distributed-logs"),
-		Region:   config.Getenv("AWS_REGION", "us-east-1"),
-		Endpoint: config.Getenv("S3_ENDPOINT", ""), // empty = real AWS
-	}
-	s3c, err := s3client.New(context.Background(), s3Cfg)
+	s3c, err := s3client.New(context.Background(), s3client.Config{
+		Bucket:   cfg.S3.Bucket,
+		Region:   cfg.S3.Region,
+		Endpoint: cfg.S3.Endpoint,
+	})
 	if err != nil {
 		log.Fatalf("s3 client: %v", err)
 	}
-	arch := archiver.New(s3c, 1000, 30*time.Second)
+	arch := archiver.New(
+		s3c,
+		cfg.Archiver.BatchSize,
+		time.Duration(cfg.Archiver.FlushIntervalSecs)*time.Second,
+	)
 	defer arch.Stop()
 
 	// ── Redis dedup cache ──────────────────────────────────────────────────
 	redisClient := redisclient.New(redisclient.Config{
-		Addr:     config.Getenv("REDIS_ADDR", "localhost:6379"),
-		Password: config.Getenv("REDIS_PASS", ""),
+		Addr:     cfg.Redis.Addr,
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
 	})
 	defer redisClient.Close()
 
 	// ── Normalizer pipeline ────────────────────────────────────────────────
-	cfg := processor.Config{
-		ConsumerGroup: config.Getenv("CONSUMER_GROUP", "stream-processor"),
+	procCfg := processor.Config{
+		ConsumerGroup: cfg.Kafka.ConsumerGroup,
 		DLQTopic:      sharedkafka.TopicDeadLetter,
+		DedupTTL:      time.Duration(cfg.DedupTTLSecs) * time.Second,
 	}
-	p := processor.New(cfg, consumer, prod, idx, arch, redisClient)
+	p := processor.New(procCfg, consumer, prod, idx, arch, redisClient)
 	if err := p.Start(); err != nil {
 		log.Fatalf("processor start: %v", err)
 	}

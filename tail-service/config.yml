@@ -1,0 +1,7 @@
+listen_addr: ":8082"
+max_active_sessions: 500
+
+kafka:
+  brokers:
+    - localhost:9092
+  consumer_group: tail-service

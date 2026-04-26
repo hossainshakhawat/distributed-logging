@@ -1,0 +1,11 @@
+gateway_url: http://localhost:8080
+tenant_id: default
+service_name: unknown
+environment: production
+
+log_paths:
+  - /var/log/app/app.log
+
+batch_size: 100
+flush_interval_seconds: 2
+buffer_dir: /tmp/log-agent-buffer

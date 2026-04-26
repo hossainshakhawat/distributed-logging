@@ -6,5 +6,7 @@ COPY stream-processor/ ./stream-processor/
 RUN cd stream-processor && go build -o /bin/stream-processor ./cmd/processor
 
 FROM alpine:3.19
-COPY --from=builder /bin/stream-processor /usr/local/bin/stream-processor
-ENTRYPOINT ["stream-processor"]
+WORKDIR /app
+COPY --from=builder /bin/stream-processor /app/stream-processor
+COPY stream-processor/config.yml /app/config.yml
+ENTRYPOINT ["/app/stream-processor"]

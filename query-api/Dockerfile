@@ -6,6 +6,8 @@ COPY query-api/ ./query-api/
 RUN cd query-api && go build -o /bin/query-api ./cmd/api
 
 FROM alpine:3.19
-COPY --from=builder /bin/query-api /usr/local/bin/query-api
+WORKDIR /app
+COPY --from=builder /bin/query-api /app/query-api
+COPY query-api/config.yml /app/config.yml
 EXPOSE 8081
-ENTRYPOINT ["query-api"]
+ENTRYPOINT ["/app/query-api"]

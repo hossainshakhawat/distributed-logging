@@ -1,0 +1,12 @@
+listen_addr: ":8080"
+rate_limit_rps: 1000
+
+kafka:
+  brokers:
+    - localhost:9092
+
+# Tenant API key pairs.
+# Override at deploy time or via environment variables.
+api_keys:
+  tenant-a: secret-a
+  tenant-b: secret-b

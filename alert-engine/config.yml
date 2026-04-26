@@ -1,0 +1,26 @@
+kafka:
+  brokers:
+    - localhost:9092
+  consumer_group: alert-engine
+
+rules:
+  - name: high-error-rate
+    tenant_id: "*"
+    level: ERROR
+    threshold: 100
+    window_seconds: 300
+    webhook: http://localhost:9000/alerts
+
+  - name: payment-failed
+    tenant_id: "*"
+    message_contains: "payment failed"
+    threshold: 1
+    window_seconds: 60
+    webhook: http://localhost:9000/alerts
+
+  - name: service-silent
+    tenant_id: "*"
+    message_contains: ""
+    threshold: 0
+    window_seconds: 600
+    webhook: http://localhost:9000/alerts

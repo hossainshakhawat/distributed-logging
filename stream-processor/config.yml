@@ -1,0 +1,30 @@
+kafka:
+  brokers:
+    - localhost:9092
+  consumer_group: stream-processor
+
+opensearch:
+  addresses:
+    - http://localhost:9200
+  username: admin
+  password: Admin@12345
+
+s3:
+  bucket: distributed-logs
+  region: us-east-1
+  endpoint: ""          # set to MinIO/LocalStack URL for local dev
+
+redis:
+  addr: localhost:6379
+  password: ""
+  db: 0
+
+indexer:
+  batch_size: 500
+  flush_interval_seconds: 5
+
+archiver:
+  batch_size: 1000
+  flush_interval_seconds: 30
+
+dedup_ttl_seconds: 300

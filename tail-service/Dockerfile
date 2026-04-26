@@ -6,6 +6,8 @@ COPY tail-service/ ./tail-service/
 RUN cd tail-service && go build -o /bin/tail-service ./cmd/tail
 
 FROM alpine:3.19
-COPY --from=builder /bin/tail-service /usr/local/bin/tail-service
+WORKDIR /app
+COPY --from=builder /bin/tail-service /app/tail-service
+COPY tail-service/config.yml /app/config.yml
 EXPOSE 8082
-ENTRYPOINT ["tail-service"]
+ENTRYPOINT ["/app/tail-service"]

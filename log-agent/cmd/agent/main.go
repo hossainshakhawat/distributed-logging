@@ -6,24 +6,29 @@ import (
 	"os/signal"
 	"syscall"
 
+	agentconfig "github.com/distributed-logging/log-agent/config"
 	"github.com/distributed-logging/log-agent/internal/agent"
-	"github.com/distributed-logging/shared/config"
 )
 
 func main() {
-	cfg := agent.Config{
-		GatewayURL:    config.Getenv("GATEWAY_URL", "http://localhost:8080"),
-		TenantID:      config.Getenv("TENANT_ID", "default"),
-		Service:       config.Getenv("SERVICE_NAME", "unknown"),
-		Host:          mustHostname(),
-		Environment:   config.Getenv("ENVIRONMENT", "production"),
-		WatchPaths:    []string{config.Getenv("LOG_PATH", "/var/log/app/app.log")},
-		BatchSize:     100,
-		FlushInterval: 2, // seconds
-		BufferDir:     config.Getenv("BUFFER_DIR", "/tmp/log-agent-buffer"),
+	cfg, err := agentconfig.Load()
+	if err != nil {
+		log.Fatalf("config: %v", err)
 	}
 
-	a := agent.New(cfg)
+	agentCfg := agent.Config{
+		GatewayURL:    cfg.GatewayURL,
+		TenantID:      cfg.TenantID,
+		Service:       cfg.ServiceName,
+		Host:          mustHostname(),
+		Environment:   cfg.Environment,
+		WatchPaths:    cfg.LogPaths,
+		BatchSize:     cfg.BatchSize,
+		FlushInterval: cfg.FlushIntervalSecs,
+		BufferDir:     cfg.BufferDir,
+	}
+
+	a := agent.New(agentCfg)
 	if err := a.Start(); err != nil {
 		log.Fatalf("agent start: %v", err)
 	}
