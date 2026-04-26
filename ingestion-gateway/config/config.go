@@ -19,7 +19,13 @@ type Config struct {
 
 // KafkaConfig holds Kafka connection settings.
 type KafkaConfig struct {
-	Brokers []string `mapstructure:"brokers"`
+	Brokers []string     `mapstructure:"brokers"`
+	Topics  TopicsConfig `mapstructure:"topics"`
+}
+
+// TopicsConfig holds the Kafka topic names used by this service.
+type TopicsConfig struct {
+	LogsRaw string `mapstructure:"logs_raw"`
 }
 
 // Load reads config.yml and applies environment variable overrides.
@@ -62,4 +68,5 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("rate_limit_rps", 1000)
 	v.SetDefault("api_keys", map[string]string{})
 	v.SetDefault("kafka.brokers", []string{"localhost:9092"})
+	v.SetDefault("kafka.topics.logs_raw", "logs-raw")
 }

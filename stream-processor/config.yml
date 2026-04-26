@@ -2,6 +2,10 @@ kafka:
   brokers:
     - localhost:9092
   consumer_group: stream-processor
+  topics:
+    logs_raw: logs-raw
+    logs_normalized: logs-normalized
+    dead_letter: logs-dead-letter
 
 opensearch:
   addresses:

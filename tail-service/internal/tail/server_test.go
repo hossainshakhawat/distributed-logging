@@ -45,7 +45,7 @@ func (m *mockConsumer) push(entry models.LogEntry) {
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 func newTestServer(maxSessions int) *Server {
-	cfg := Config{ListenAddr: ":0", MaxActiveSessions: maxSessions}
+	cfg := Config{ListenAddr: ":0", MaxActiveSessions: maxSessions, NormalizedTopic: "logs-normalized"}
 	return NewServer(cfg, newMockConsumer())
 }
 
@@ -423,7 +423,7 @@ func TestHandleTail_decrementsActiveSessionsOnExit(t *testing.T) {
 
 func TestFanOut_dispatchesConsumedEntry(t *testing.T) {
 	consumer := newMockConsumer()
-	cfg := Config{ListenAddr: ":0", MaxActiveSessions: 10}
+	cfg := Config{ListenAddr: ":0", MaxActiveSessions: 10, NormalizedTopic: "logs-normalized"}
 	srv := NewServer(cfg, consumer) // starts fanOut goroutine
 
 	ch := make(chan models.LogEntry, 4)

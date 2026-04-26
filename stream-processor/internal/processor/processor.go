@@ -15,9 +15,11 @@ import (
 
 // Config holds stream processor settings.
 type Config struct {
-	ConsumerGroup string
-	DLQTopic      string
-	DedupTTL      time.Duration // how long to remember log IDs for dedup
+	ConsumerGroup   string
+	RawTopic        string
+	NormalizedTopic string
+	DLQTopic        string
+	DedupTTL        time.Duration // how long to remember log IDs for dedup
 }
 
 // DedupStore is the interface for deduplication checks, satisfied by *redisclient.Client.
@@ -62,7 +64,7 @@ func New(
 
 // Start subscribes and begins the processing loop.
 func (p *Processor) Start() error {
-	if err := p.consumer.Subscribe([]string{kafka.TopicLogsRaw}); err != nil {
+	if err := p.consumer.Subscribe([]string{p.cfg.RawTopic}); err != nil {
 		return err
 	}
 	go p.loop()
@@ -118,7 +120,7 @@ func (p *Processor) handle(ctx context.Context, msg *kafka.Message) {
 
 		// Publish to logs-normalized for alert-engine and tail-service.
 		out := kafka.Message{
-			Topic:     kafka.TopicLogsNormalized,
+			Topic:     p.cfg.NormalizedTopic,
 			Key:       kafka.LogPartitionKey(normalised.TenantID, normalised.Service),
 			Timestamp: normalised.IngestTimestamp,
 		}

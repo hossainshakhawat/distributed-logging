@@ -2,6 +2,8 @@ kafka:
   brokers:
     - localhost:9092
   consumer_group: alert-engine
+  topics:
+    logs_normalized: logs-normalized
 
 rules:
   - name: high-error-rate

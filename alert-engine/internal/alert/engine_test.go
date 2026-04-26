@@ -44,14 +44,14 @@ func (m *mockConsumer) push(entry models.LogEntry) {
 // ── NewEngine ─────────────────────────────────────────────────────────────────
 
 func TestNewEngine_notNil(t *testing.T) {
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	if e == nil {
 		t.Fatal("NewEngine returned nil")
 	}
 }
 
 func TestNewEngine_stateInitialized(t *testing.T) {
-	e := NewEngine(newMockConsumer(), []Rule{})
+	e := NewEngine(newMockConsumer(), []Rule{}, "logs-normalized")
 	if e.state == nil {
 		t.Fatal("state map should be initialized by NewEngine")
 	}
@@ -60,7 +60,7 @@ func TestNewEngine_stateInitialized(t *testing.T) {
 // ── matches ───────────────────────────────────────────────────────────────────
 
 func TestMatches_tenantExact(t *testing.T) {
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	rule := Rule{TenantID: "acme"}
 	tests := []struct {
 		tenantID string
@@ -79,7 +79,7 @@ func TestMatches_tenantExact(t *testing.T) {
 }
 
 func TestMatches_tenantWildcard(t *testing.T) {
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	rule := Rule{TenantID: "*"}
 	for _, tid := range []string{"acme", "beta", ""} {
 		entry := models.LogEntry{TenantID: tid}
@@ -90,7 +90,7 @@ func TestMatches_tenantWildcard(t *testing.T) {
 }
 
 func TestMatches_levelFilter(t *testing.T) {
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	rule := Rule{TenantID: "t1", Level: "ERROR"}
 	tests := []struct {
 		level string
@@ -111,7 +111,7 @@ func TestMatches_levelFilter(t *testing.T) {
 }
 
 func TestMatches_emptyLevel_matchesAny(t *testing.T) {
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	rule := Rule{TenantID: "t1", Level: ""}
 	for _, lvl := range []string{"ERROR", "WARN", "INFO", "DEBUG", "FATAL", ""} {
 		entry := models.LogEntry{TenantID: "t1", Level: lvl}
@@ -122,7 +122,7 @@ func TestMatches_emptyLevel_matchesAny(t *testing.T) {
 }
 
 func TestMatches_messageContains(t *testing.T) {
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	rule := Rule{TenantID: "t1", MessageContains: "OOM"}
 	tests := []struct {
 		message string
@@ -143,7 +143,7 @@ func TestMatches_messageContains(t *testing.T) {
 }
 
 func TestMatches_emptyMessageContains_matchesAny(t *testing.T) {
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	rule := Rule{TenantID: "t1", MessageContains: ""}
 	for _, msg := range []string{"hello", "error boom", "", "random"} {
 		entry := models.LogEntry{TenantID: "t1", Message: msg}
@@ -154,7 +154,7 @@ func TestMatches_emptyMessageContains_matchesAny(t *testing.T) {
 }
 
 func TestMatches_allFilters(t *testing.T) {
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	rule := Rule{TenantID: "t1", Level: "ERROR", MessageContains: "crash"}
 	// All conditions satisfied.
 	if !e.matches(rule, models.LogEntry{TenantID: "t1", Level: "ERROR", Message: "app crash detected"}) {
@@ -193,7 +193,7 @@ func TestFire_postsToWebhook(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	rule := Rule{Name: "test-rule", TenantID: "t1", Webhook: ts.URL}
 	entry := models.LogEntry{TenantID: "t1", Level: "ERROR", Message: "boom"}
 	e.fire(rule, entry, 3)
@@ -214,7 +214,7 @@ func TestFire_webhookPayloadFields(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	rule := Rule{Name: "spike", TenantID: "acme", Webhook: ts.URL}
 	entry := models.LogEntry{TenantID: "acme", Service: "svc-a", Level: "ERROR", Message: "timeout"}
 	e.fire(rule, entry, 7)
@@ -234,7 +234,7 @@ func TestFire_webhookPayloadFields(t *testing.T) {
 }
 
 func TestFire_badWebhookURL_doesNotPanic(t *testing.T) {
-	e := NewEngine(newMockConsumer(), nil)
+	e := NewEngine(newMockConsumer(), nil, "logs-normalized")
 	rule := Rule{Name: "r", Webhook: "http://127.0.0.1:1/gone"}
 	e.fire(rule, models.LogEntry{TenantID: "t1"}, 1)
 	// No panic is sufficient.
@@ -251,7 +251,7 @@ func TestEvaluate_firesAtThreshold(t *testing.T) {
 	defer ts.Close()
 
 	rule := Rule{Name: "err-spike", TenantID: "t1", Level: "ERROR", Threshold: 3, WindowSecs: 60, Webhook: ts.URL}
-	e := NewEngine(newMockConsumer(), []Rule{rule})
+	e := NewEngine(newMockConsumer(), []Rule{rule}, "logs-normalized")
 	entry := models.LogEntry{TenantID: "t1", Level: "ERROR", Message: "boom"}
 
 	e.evaluate(entry) // count=1
@@ -276,7 +276,7 @@ func TestEvaluate_doesNotFireBelowThreshold(t *testing.T) {
 	defer ts.Close()
 
 	rule := Rule{Name: "r", TenantID: "t1", Level: "ERROR", Threshold: 100, WindowSecs: 60, Webhook: ts.URL}
-	e := NewEngine(newMockConsumer(), []Rule{rule})
+	e := NewEngine(newMockConsumer(), []Rule{rule}, "logs-normalized")
 	entry := models.LogEntry{TenantID: "t1", Level: "ERROR", Message: "x"}
 
 	for i := 0; i < 10; i++ {
@@ -297,7 +297,7 @@ func TestEvaluate_nonMatchingEntry_ignored(t *testing.T) {
 	defer ts.Close()
 
 	rule := Rule{Name: "r", TenantID: "t1", Level: "ERROR", Threshold: 1, WindowSecs: 60, Webhook: ts.URL}
-	e := NewEngine(newMockConsumer(), []Rule{rule})
+	e := NewEngine(newMockConsumer(), []Rule{rule}, "logs-normalized")
 
 	// Different tenant — should not match.
 	e.evaluate(models.LogEntry{TenantID: "other", Level: "ERROR", Message: "x"})
@@ -310,7 +310,7 @@ func TestEvaluate_nonMatchingEntry_ignored(t *testing.T) {
 func TestEvaluate_windowExpiry_resetsCount(t *testing.T) {
 	// Use a high threshold so the webhook is never called during this test.
 	rule := Rule{Name: "r", TenantID: "t1", Level: "ERROR", Threshold: 100, WindowSecs: 60}
-	e := NewEngine(newMockConsumer(), []Rule{rule})
+	e := NewEngine(newMockConsumer(), []Rule{rule}, "logs-normalized")
 	entry := models.LogEntry{TenantID: "t1", Level: "ERROR", Message: "x"}
 	key := rule.Name + "|" + entry.TenantID
 
@@ -343,7 +343,7 @@ func TestEvaluate_windowExpiry_resetsCount(t *testing.T) {
 
 func TestEngine_StartStop(t *testing.T) {
 	consumer := newMockConsumer()
-	e := NewEngine(consumer, []Rule{})
+	e := NewEngine(consumer, []Rule{}, "logs-normalized")
 	if err := e.Start(); err != nil {
 		t.Fatalf("Start() error: %v", err)
 	}

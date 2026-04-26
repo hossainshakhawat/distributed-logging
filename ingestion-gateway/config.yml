@@ -4,6 +4,8 @@ rate_limit_rps: 1000
 kafka:
   brokers:
     - localhost:9092
+  topics:
+    logs_raw: logs-raw
 
 # Tenant API key pairs.
 # Override at deploy time or via environment variables.

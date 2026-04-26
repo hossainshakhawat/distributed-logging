@@ -23,6 +23,7 @@ func main() {
 	srvCfg := tail.Config{
 		ListenAddr:        cfg.ListenAddr,
 		MaxActiveSessions: cfg.MaxActiveSessions,
+		NormalizedTopic:   cfg.Kafka.Topics.LogsNormalized,
 	}
 
 	srv := tail.NewServer(srvCfg, consumer)

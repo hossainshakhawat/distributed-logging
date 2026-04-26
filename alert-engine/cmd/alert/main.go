@@ -35,7 +35,7 @@ func main() {
 		}
 	}
 
-	engine := alert.NewEngine(consumer, rules)
+	engine := alert.NewEngine(consumer, rules, cfg.Kafka.Topics.LogsNormalized)
 	if err := engine.Start(); err != nil {
 		log.Fatalf("alert engine start: %v", err)
 	}

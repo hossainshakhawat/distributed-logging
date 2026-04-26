@@ -18,8 +18,14 @@ type Config struct {
 
 // KafkaConfig holds Kafka consumer settings.
 type KafkaConfig struct {
-	Brokers       []string `mapstructure:"brokers"`
-	ConsumerGroup string   `mapstructure:"consumer_group"`
+	Brokers       []string     `mapstructure:"brokers"`
+	ConsumerGroup string       `mapstructure:"consumer_group"`
+	Topics        TopicsConfig `mapstructure:"topics"`
+}
+
+// TopicsConfig holds the Kafka topic names used by this service.
+type TopicsConfig struct {
+	LogsNormalized string `mapstructure:"logs_normalized"`
 }
 
 // Load reads config.yml and applies environment variable overrides.
@@ -60,4 +66,5 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("max_active_sessions", 500)
 	v.SetDefault("kafka.brokers", []string{"localhost:9092"})
 	v.SetDefault("kafka.consumer_group", "tail-service")
+	v.SetDefault("kafka.topics.logs_normalized", "logs-normalized")
 }

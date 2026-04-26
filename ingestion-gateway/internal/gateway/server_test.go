@@ -31,7 +31,7 @@ func (m *mockProducer) Close() error { return nil }
 
 func newDevServer(rps int) (*Server, *mockProducer) {
 	prod := &mockProducer{}
-	cfg := Config{RateLimitRPS: rps} // empty ValidAPIKeys = dev mode
+	cfg := Config{RateLimitRPS: rps, RawTopic: kafka.TopicLogsRaw} // empty ValidAPIKeys = dev mode
 	return NewServer(cfg, prod), prod
 }
 
@@ -145,6 +145,7 @@ func TestIngest_wrongAPIKey_unauthorized(t *testing.T) {
 	prod := &mockProducer{}
 	srv := NewServer(Config{
 		RateLimitRPS: 100,
+		RawTopic:     kafka.TopicLogsRaw,
 		ValidAPIKeys: map[string]string{"t1": "correct-key"},
 	}, prod)
 	rr := postIngest(srv, validBatchJSON("t1", "svc"), map[string]string{
@@ -179,6 +180,7 @@ func TestIngest_validWithAPIKey_accepted(t *testing.T) {
 	prod := &mockProducer{}
 	srv := NewServer(Config{
 		RateLimitRPS: 100,
+		RawTopic:     kafka.TopicLogsRaw,
 		ValidAPIKeys: map[string]string{"t1": "my-key"},
 	}, prod)
 	rr := postIngest(srv, validBatchJSON("t1", "svc"), map[string]string{

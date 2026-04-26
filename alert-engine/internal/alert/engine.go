@@ -33,28 +33,30 @@ type windowState struct {
 
 // Engine consumes normalised log entries and evaluates alert rules.
 type Engine struct {
-	consumer kafka.Consumer
-	rules    []Rule
-	state    map[string]*windowState // key: ruleName+tenantID
-	mu       sync.Mutex
-	done     chan struct{}
-	client   *http.Client
+	consumer        kafka.Consumer
+	rules           []Rule
+	normalizedTopic string
+	state           map[string]*windowState // key: ruleName+tenantID
+	mu              sync.Mutex
+	done            chan struct{}
+	client          *http.Client
 }
 
 // NewEngine creates an Engine.
-func NewEngine(consumer kafka.Consumer, rules []Rule) *Engine {
+func NewEngine(consumer kafka.Consumer, rules []Rule, normalizedTopic string) *Engine {
 	return &Engine{
-		consumer: consumer,
-		rules:    rules,
-		state:    make(map[string]*windowState),
-		done:     make(chan struct{}),
-		client:   &http.Client{Timeout: 5 * time.Second},
+		consumer:        consumer,
+		rules:           rules,
+		normalizedTopic: normalizedTopic,
+		state:           make(map[string]*windowState),
+		done:            make(chan struct{}),
+		client:          &http.Client{Timeout: 5 * time.Second},
 	}
 }
 
 // Start subscribes to Kafka and begins evaluation.
 func (e *Engine) Start() error {
-	if err := e.consumer.Subscribe([]string{kafka.TopicLogsNormalized}); err != nil {
+	if err := e.consumer.Subscribe([]string{e.normalizedTopic}); err != nil {
 		return err
 	}
 	go e.loop()

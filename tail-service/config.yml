@@ -5,3 +5,5 @@ kafka:
   brokers:
     - localhost:9092
   consumer_group: tail-service
+  topics:
+    logs_normalized: logs-normalized

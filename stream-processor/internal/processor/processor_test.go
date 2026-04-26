@@ -86,9 +86,11 @@ func (m *mockDedup) SetNX(_ context.Context, key string, _ time.Duration) (bool,
 
 func newProcessor(prod *mockProducer, dedup DedupStore) *Processor {
 	cfg := Config{
-		ConsumerGroup: "test-group",
-		DLQTopic:      kafka.TopicDeadLetter,
-		DedupTTL:      time.Minute,
+		ConsumerGroup:   "test-group",
+		RawTopic:        kafka.TopicLogsRaw,
+		NormalizedTopic: kafka.TopicLogsNormalized,
+		DLQTopic:        kafka.TopicDeadLetter,
+		DedupTTL:        time.Minute,
 	}
 	return New(cfg, newMockConsumer(), prod, nil, nil, dedup)
 }
@@ -366,7 +368,7 @@ func TestHandle_multipleBatchEntries(t *testing.T) {
 func TestHandle_commitsMessage(t *testing.T) {
 	consumer := newMockConsumer()
 	prod := &mockProducer{}
-	cfg := Config{ConsumerGroup: "g", DLQTopic: kafka.TopicDeadLetter}
+	cfg := Config{ConsumerGroup: "g", RawTopic: kafka.TopicLogsRaw, NormalizedTopic: kafka.TopicLogsNormalized, DLQTopic: kafka.TopicDeadLetter}
 	p := New(cfg, consumer, prod, nil, nil, nil)
 
 	batch := models.LogBatch{

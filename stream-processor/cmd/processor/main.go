@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	sharedkafka "github.com/hossainshakhawat/distributed-logging/store-kafka/kafka"
 	kafkaconsumer "github.com/hossainshakhawat/distributed-logging/store-kafka/consumer"
 	kafkaproducer "github.com/hossainshakhawat/distributed-logging/store-kafka/producer"
 	osclient "github.com/hossainshakhawat/distributed-logging/store-opensearch/client"
@@ -81,9 +80,11 @@ func main() {
 
 	// ── Normalizer pipeline ────────────────────────────────────────────────
 	procCfg := processor.Config{
-		ConsumerGroup: cfg.Kafka.ConsumerGroup,
-		DLQTopic:      sharedkafka.TopicDeadLetter,
-		DedupTTL:      time.Duration(cfg.DedupTTLSecs) * time.Second,
+		ConsumerGroup:   cfg.Kafka.ConsumerGroup,
+		RawTopic:        cfg.Kafka.Topics.LogsRaw,
+		NormalizedTopic: cfg.Kafka.Topics.LogsNormalized,
+		DLQTopic:        cfg.Kafka.Topics.DeadLetter,
+		DedupTTL:        time.Duration(cfg.DedupTTLSecs) * time.Second,
 	}
 	p := processor.New(procCfg, consumer, prod, idx, arch, redisClient)
 	if err := p.Start(); err != nil {

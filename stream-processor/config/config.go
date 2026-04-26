@@ -22,8 +22,16 @@ type Config struct {
 
 // KafkaConfig holds Kafka consumer/producer settings.
 type KafkaConfig struct {
-	Brokers       []string `mapstructure:"brokers"`
-	ConsumerGroup string   `mapstructure:"consumer_group"`
+	Brokers       []string     `mapstructure:"brokers"`
+	ConsumerGroup string       `mapstructure:"consumer_group"`
+	Topics        TopicsConfig `mapstructure:"topics"`
+}
+
+// TopicsConfig holds the Kafka topic names used by this service.
+type TopicsConfig struct {
+	LogsRaw        string `mapstructure:"logs_raw"`
+	LogsNormalized string `mapstructure:"logs_normalized"`
+	DeadLetter     string `mapstructure:"dead_letter"`
 }
 
 // OpenSearchConfig holds OpenSearch client settings.
@@ -95,7 +103,9 @@ func Load() (*Config, error) {
 func setDefaults(v *viper.Viper) {
 	v.SetDefault("kafka.brokers", []string{"localhost:9092"})
 	v.SetDefault("kafka.consumer_group", "stream-processor")
-
+	v.SetDefault("kafka.topics.logs_raw", "logs-raw")
+	v.SetDefault("kafka.topics.logs_normalized", "logs-normalized")
+	v.SetDefault("kafka.topics.dead_letter", "logs-dead-letter")
 	v.SetDefault("opensearch.addresses", []string{"http://localhost:9200"})
 	v.SetDefault("opensearch.username", "admin")
 	v.SetDefault("opensearch.password", "Admin@12345")

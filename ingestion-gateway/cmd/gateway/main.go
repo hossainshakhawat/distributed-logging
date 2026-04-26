@@ -27,6 +27,7 @@ func main() {
 		ListenAddr:   cfg.ListenAddr,
 		RateLimitRPS: cfg.RateLimitRPS,
 		ValidAPIKeys: cfg.APIKeys,
+		RawTopic:     cfg.Kafka.Topics.LogsRaw,
 	}
 
 	srv := gateway.NewServer(srvCfg, producer)

@@ -19,6 +19,7 @@ type Config struct {
 	ListenAddr   string
 	RateLimitRPS int
 	ValidAPIKeys map[string]string // tenantID -> apiKey
+	RawTopic     string            // Kafka topic for raw log batches
 }
 
 // Server is the HTTP ingestion server.
@@ -86,7 +87,7 @@ func (s *Server) handleIngest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := kafka.Message{
-		Topic:     kafka.TopicLogsRaw,
+		Topic:     s.cfg.RawTopic,
 		Key:       kafka.LogPartitionKey(tenantID, batch.Entries[0].Service),
 		Timestamp: now,
 	}

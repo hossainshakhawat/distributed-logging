@@ -17,6 +17,7 @@ import (
 type Config struct {
 	ListenAddr        string
 	MaxActiveSessions int
+	NormalizedTopic   string // Kafka topic for normalised log entries
 }
 
 // Server streams live logs over SSE.
@@ -107,7 +108,7 @@ func (s *Server) handleTail(w http.ResponseWriter, r *http.Request) {
 
 // fanOut consumes from Kafka and dispatches to registered channels.
 func (s *Server) fanOut() {
-	if err := s.consumer.Subscribe([]string{kafka.TopicLogsNormalized}); err != nil {
+	if err := s.consumer.Subscribe([]string{s.cfg.NormalizedTopic}); err != nil {
 		log.Printf("tail: subscribe: %v", err)
 		return
 	}
