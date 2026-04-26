@@ -137,25 +137,75 @@ Response: `202 Accepted`
 ```
 Headers:
   X-Tenant-ID: <tenant>
-  X-API-Key: <key>
+  X-API-Key: <key>           (omit when api_keys is empty — dev mode)
 
 Query params:
-  service=<name>
-  level=ERROR|WARN|INFO|DEBUG
-  q=<full-text query>
-  from=<RFC3339>
-  to=<RFC3339>
+  service=<name>             (optional)
+  level=ERROR|WARN|INFO|DEBUG (optional)
+  q=<full-text query>        (optional)
+  from=<RFC3339>             (default: 1 hour ago)
+  to=<RFC3339>               (default: now)
+  page=<int>                 (default: 1)
+  page_size=<int>            (default: 100, max: 1000)
 ```
 
-Response:
+Requests with `from` within the last `hot_retention_days` (default 7) are served from **OpenSearch**. Older time ranges hit the cold path (S3/Athena — stub, returns empty until wired).
+
+**Response:**
 
 ```json
 {
-  "total": 42,
+  "total": 142,
   "page": 1,
   "page_size": 100,
-  "entries": [ ... ]
+  "entries": [
+    {
+      "log_id": "a1b2c3d4",
+      "tenant_id": "tenant-a",
+      "service": "payment",
+      "host": "pod-1",
+      "environment": "production",
+      "level": "ERROR",
+      "message": "connection timeout to db",
+      "event_timestamp": "2026-04-26T10:05:00Z",
+      "ingest_timestamp": "2026-04-26T10:05:01Z"
+    }
+  ]
 }
+```
+
+**Examples:**
+
+```bash
+# All errors in the last hour
+curl -s \
+  -H "X-Tenant-ID: tenant-a" \
+  -H "X-API-Key: secret-a" \
+  "http://localhost:8081/logs/search?level=ERROR"
+
+# Filter by service
+curl -s \
+  -H "X-Tenant-ID: tenant-a" \
+  -H "X-API-Key: secret-a" \
+  "http://localhost:8081/logs/search?service=payment"
+
+# Full-text search
+curl -s \
+  -H "X-Tenant-ID: tenant-a" \
+  -H "X-API-Key: secret-a" \
+  "http://localhost:8081/logs/search?q=connection+refused"
+
+# Combine filters with a time range
+curl -s \
+  -H "X-Tenant-ID: tenant-a" \
+  -H "X-API-Key: secret-a" \
+  "http://localhost:8081/logs/search?service=payment&level=ERROR&q=timeout&from=2026-04-26T00:00:00Z&to=2026-04-26T12:00:00Z"
+
+# Pagination — page 2, 50 results per page
+curl -s \
+  -H "X-Tenant-ID: tenant-a" \
+  -H "X-API-Key: secret-a" \
+  "http://localhost:8081/logs/search?level=WARN&page=2&page_size=50"
 ```
 
 ---
