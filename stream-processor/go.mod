@@ -1,13 +1,12 @@
-module github.com/distributed-logging/stream-processor
+module github.com/hossainshakhawat/distributed-logging/stream-processor
 
 go 1.25.0
 
 require (
-	github.com/distributed-logging/shared v0.0.0
-	github.com/distributed-logging/store-kafka v0.0.0
-	github.com/distributed-logging/store-opensearch v0.0.0
-	github.com/distributed-logging/store-redis v0.0.0
-	github.com/distributed-logging/store-s3 v0.0.0
+	github.com/hossainshakhawat/distributed-logging/store-kafka v0.0.0
+	github.com/hossainshakhawat/distributed-logging/store-opensearch v0.0.0
+	github.com/hossainshakhawat/distributed-logging/store-redis v0.0.0
+	github.com/hossainshakhawat/distributed-logging/store-s3 v0.0.0
 	github.com/spf13/viper v1.21.0
 )
 
@@ -54,9 +53,8 @@ require (
 )
 
 replace (
-	github.com/distributed-logging/shared => ../shared
-	github.com/distributed-logging/store-kafka => ../store/kafka
-	github.com/distributed-logging/store-opensearch => ../store/opensearch
-	github.com/distributed-logging/store-redis => ../store/redis
-	github.com/distributed-logging/store-s3 => ../store/s3
+	github.com/hossainshakhawat/distributed-logging/store-kafka => ../store/kafka
+	github.com/hossainshakhawat/distributed-logging/store-opensearch => ../store/opensearch
+	github.com/hossainshakhawat/distributed-logging/store-redis => ../store/redis
+	github.com/hossainshakhawat/distributed-logging/store-s3 => ../store/s3
 )

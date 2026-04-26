@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	tsconfig "github.com/distributed-logging/tail-service/config"
-	"github.com/distributed-logging/tail-service/internal/tail"
-	kafkaconsumer "github.com/distributed-logging/store-kafka/consumer"
+	kafkaconsumer "github.com/hossainshakhawat/distributed-logging/store-kafka/consumer"
+	tsconfig "github.com/hossainshakhawat/distributed-logging/tail-service/config"
+	"github.com/hossainshakhawat/distributed-logging/tail-service/internal/tail"
 )
 
 func main() {

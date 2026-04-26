@@ -8,16 +8,16 @@ import (
 	"syscall"
 	"time"
 
-	sharedkafka "github.com/distributed-logging/shared/kafka"
-	kafkaconsumer "github.com/distributed-logging/store-kafka/consumer"
-	kafkaproducer "github.com/distributed-logging/store-kafka/producer"
-	osclient "github.com/distributed-logging/store-opensearch/client"
-	redisclient "github.com/distributed-logging/store-redis/client"
-	s3client "github.com/distributed-logging/store-s3/client"
-	spconfig "github.com/distributed-logging/stream-processor/config"
-	"github.com/distributed-logging/stream-processor/internal/archiver"
-	"github.com/distributed-logging/stream-processor/internal/indexer"
-	"github.com/distributed-logging/stream-processor/internal/processor"
+	sharedkafka "github.com/hossainshakhawat/distributed-logging/store-kafka/kafka"
+	kafkaconsumer "github.com/hossainshakhawat/distributed-logging/store-kafka/consumer"
+	kafkaproducer "github.com/hossainshakhawat/distributed-logging/store-kafka/producer"
+	osclient "github.com/hossainshakhawat/distributed-logging/store-opensearch/client"
+	redisclient "github.com/hossainshakhawat/distributed-logging/store-redis/client"
+	s3client "github.com/hossainshakhawat/distributed-logging/store-s3/client"
+	spconfig "github.com/hossainshakhawat/distributed-logging/stream-processor/config"
+	"github.com/hossainshakhawat/distributed-logging/stream-processor/internal/archiver"
+	"github.com/hossainshakhawat/distributed-logging/stream-processor/internal/indexer"
+	"github.com/hossainshakhawat/distributed-logging/stream-processor/internal/processor"
 )
 
 func main() {

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/distributed-logging/shared/kafka"
-	"github.com/distributed-logging/shared/models"
-	redisclient "github.com/distributed-logging/store-redis/client"
-	"github.com/distributed-logging/stream-processor/internal/archiver"
-	"github.com/distributed-logging/stream-processor/internal/indexer"
+	"github.com/hossainshakhawat/distributed-logging/store-kafka/kafka"
+	"github.com/hossainshakhawat/distributed-logging/store-kafka/models"
+	redisclient "github.com/hossainshakhawat/distributed-logging/store-redis/client"
+	"github.com/hossainshakhawat/distributed-logging/stream-processor/internal/archiver"
+	"github.com/hossainshakhawat/distributed-logging/stream-processor/internal/indexer"
 )
 
 // Config holds stream processor settings.

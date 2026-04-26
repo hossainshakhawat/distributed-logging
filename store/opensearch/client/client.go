@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/distributed-logging/shared/models"
+	"github.com/hossainshakhawat/distributed-logging/store-kafka/models"
 	opensearch "github.com/opensearch-project/opensearch-go/v2"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 )

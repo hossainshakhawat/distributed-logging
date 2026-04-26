@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/distributed-logging/shared/models"
-	s3client "github.com/distributed-logging/store-s3/client"
+	"github.com/hossainshakhawat/distributed-logging/store-kafka/models"
+	s3client "github.com/hossainshakhawat/distributed-logging/store-s3/client"
 )
 
 // Archiver batches log entries and uploads them to S3 as gzip-compressed NDJSON.

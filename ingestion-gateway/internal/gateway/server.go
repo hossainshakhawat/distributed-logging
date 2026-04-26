@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/distributed-logging/shared/kafka"
-	"github.com/distributed-logging/shared/models"
+	"github.com/hossainshakhawat/distributed-logging/store-kafka/kafka"
+	"github.com/hossainshakhawat/distributed-logging/store-kafka/models"
 )
 
 // Config holds gateway settings.

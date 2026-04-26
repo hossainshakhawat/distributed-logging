@@ -6,9 +6,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	aeconfig "github.com/distributed-logging/alert-engine/config"
-	"github.com/distributed-logging/alert-engine/internal/alert"
-	kafkaconsumer "github.com/distributed-logging/store-kafka/consumer"
+	aeconfig "github.com/hossainshakhawat/distributed-logging/alert-engine/config"
+	"github.com/hossainshakhawat/distributed-logging/alert-engine/internal/alert"
+	kafkaconsumer "github.com/hossainshakhawat/distributed-logging/store-kafka/consumer"
 )
 
 func main() {

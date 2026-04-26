@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	osclient "github.com/distributed-logging/store-opensearch/client"
-	"github.com/distributed-logging/shared/models"
+	osclient "github.com/hossainshakhawat/distributed-logging/store-opensearch/client"
+	"github.com/hossainshakhawat/distributed-logging/store-kafka/models"
 )
 
 // Indexer batches log entries and bulk-indexes them to OpenSearch.

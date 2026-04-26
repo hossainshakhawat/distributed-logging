@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	gwconfig "github.com/distributed-logging/ingestion-gateway/config"
-	"github.com/distributed-logging/ingestion-gateway/internal/gateway"
-	kafkaproducer "github.com/distributed-logging/store-kafka/producer"
+	gwconfig "github.com/hossainshakhawat/distributed-logging/ingestion-gateway/config"
+	"github.com/hossainshakhawat/distributed-logging/ingestion-gateway/internal/gateway"
+	kafkaproducer "github.com/hossainshakhawat/distributed-logging/store-kafka/producer"
 )
 
 func main() {

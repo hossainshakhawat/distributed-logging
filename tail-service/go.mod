@@ -1,10 +1,9 @@
-module github.com/distributed-logging/tail-service
+module github.com/hossainshakhawat/distributed-logging/tail-service
 
 go 1.25.0
 
 require (
-	github.com/distributed-logging/shared v0.0.0
-	github.com/distributed-logging/store-kafka v0.0.0
+	github.com/hossainshakhawat/distributed-logging/store-kafka v0.0.0
 	github.com/spf13/viper v1.21.0
 )
 
@@ -27,7 +26,4 @@ require (
 	golang.org/x/text v0.28.0 // indirect
 )
 
-replace (
-	github.com/distributed-logging/shared => ../shared
-	github.com/distributed-logging/store-kafka => ../store/kafka
-)
+replace github.com/hossainshakhawat/distributed-logging/store-kafka => ../store/kafka

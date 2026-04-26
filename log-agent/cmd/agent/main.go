@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	agentconfig "github.com/distributed-logging/log-agent/config"
-	"github.com/distributed-logging/log-agent/internal/agent"
+	agentconfig "github.com/hossainshakhawat/distributed-logging/log-agent/config"
+	"github.com/hossainshakhawat/distributed-logging/log-agent/internal/agent"
 )
 
 func main() {

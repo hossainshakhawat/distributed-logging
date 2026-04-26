@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/distributed-logging/shared/kafka"
+	"github.com/hossainshakhawat/distributed-logging/store-kafka/kafka"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 

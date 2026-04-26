@@ -1,10 +1,10 @@
-module github.com/distributed-logging/query-api
+module github.com/hossainshakhawat/distributed-logging/query-api
 
-go 1.23.0
+go 1.25.0
 
 require (
-	github.com/distributed-logging/shared v0.0.0
-	github.com/distributed-logging/store-opensearch v0.0.0
+	github.com/hossainshakhawat/distributed-logging/store-kafka v0.0.0
+	github.com/hossainshakhawat/distributed-logging/store-opensearch v0.0.0
 	github.com/spf13/viper v1.21.0
 )
 
@@ -25,6 +25,6 @@ require (
 )
 
 replace (
-	github.com/distributed-logging/shared => ../shared
-	github.com/distributed-logging/store-opensearch => ../store/opensearch
+	github.com/hossainshakhawat/distributed-logging/store-kafka => ../store/kafka
+	github.com/hossainshakhawat/distributed-logging/store-opensearch => ../store/opensearch
 )

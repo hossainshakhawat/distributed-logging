@@ -1,12 +1,12 @@
-module github.com/distributed-logging/store-s3
+module github.com/hossainshakhawat/distributed-logging/store-s3
 
-go 1.24
+go 1.25.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.16
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.100.0
-	github.com/distributed-logging/shared v0.0.0
+	github.com/hossainshakhawat/distributed-logging/store-kafka v0.0.0
 )
 
 require (
@@ -25,6 +25,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.20 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.0 // indirect
 	github.com/aws/smithy-go v1.25.0 // indirect
+	github.com/klauspost/compress v1.18.5 // indirect
+	github.com/pierrec/lz4/v4 v4.1.26 // indirect
+	github.com/twmb/franz-go v1.21.0 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.13.1 // indirect
 )
 
-replace github.com/distributed-logging/shared => ../../shared
+replace github.com/hossainshakhawat/distributed-logging/store-kafka => ../kafka

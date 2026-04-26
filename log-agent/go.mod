@@ -1,10 +1,10 @@
-module github.com/distributed-logging/log-agent
+module github.com/hossainshakhawat/distributed-logging/log-agent
 
-go 1.23.0
+go 1.25.0
 
 require (
-	github.com/distributed-logging/shared v0.0.0
 	github.com/google/uuid v1.6.0
+	github.com/hossainshakhawat/distributed-logging/store-kafka v0.0.0
 	github.com/spf13/viper v1.21.0
 )
 
@@ -23,4 +23,4 @@ require (
 	golang.org/x/text v0.28.0 // indirect
 )
 
-replace github.com/distributed-logging/shared => ../shared
+replace github.com/hossainshakhawat/distributed-logging/store-kafka => ../store/kafka

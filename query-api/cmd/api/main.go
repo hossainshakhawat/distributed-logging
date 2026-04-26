@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	qaconfig "github.com/distributed-logging/query-api/config"
-	"github.com/distributed-logging/query-api/internal/api"
-	osclient "github.com/distributed-logging/store-opensearch/client"
+	qaconfig "github.com/hossainshakhawat/distributed-logging/query-api/config"
+	"github.com/hossainshakhawat/distributed-logging/query-api/internal/api"
+	osclient "github.com/hossainshakhawat/distributed-logging/store-opensearch/client"
 )
 
 func main() {

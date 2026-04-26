@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/distributed-logging/shared/models"
+	"github.com/hossainshakhawat/distributed-logging/store-kafka/models"
 	"github.com/google/uuid"
 )
 
