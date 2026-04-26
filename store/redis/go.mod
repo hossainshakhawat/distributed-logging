@@ -1,6 +1,6 @@
 module github.com/hossainshakhawat/distributed-logging/store-redis
 
-go 1.23.0
+go 1.25.0
 
 require github.com/redis/go-redis/v9 v9.18.0
 
