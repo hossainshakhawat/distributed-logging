@@ -5,22 +5,106 @@ A production-grade distributed log aggregation system implemented in Go, organis
 ## Architecture
 
 ```
-Applications
-  ↓
-Log Agent (log-agent)          — batch, compress, retry, buffer locally
-  ↓
-Ingestion Gateway              — auth, rate-limit, decompress → Kafka
-  ↓
-Kafka  (logs-raw)
-  ↓
-Stream Processor               — parse, normalise, enrich, DLQ → Kafka (logs-normalized)
-  ├── OpenSearch               — hot searchable storage (7–30 days)
-  ├── S3 / GCS                 — cold archive (Parquet / gzip)
-  └── Alert Engine             — windowed rule evaluation → webhook
-  
-User → Query API               — routes to hot or cold storage
-User → Tail Service            — SSE live stream from Kafka
+┌─────────────────────────────────────────────────────────────────────┐
+│  Applications (any process writing to log files on disk)            │
+└───────────────────────────┬─────────────────────────────────────────┘
+                            │  tail files → batch → gzip → POST /ingest
+                            ▼
+                    ┌───────────────┐
+                    │   log-agent   │  buffers to disk on gateway failure
+                    └───────┬───────┘  retries on restart (replayBuffer)
+                            │  HTTP POST /ingest  (X-Tenant-ID, X-API-Key)
+                            ▼
+                  ┌──────────────────┐
+                  │ingestion-gateway │  auth · per-tenant rate-limit ·
+                  │    :8080         │  enforce tenantID · set ingest_timestamp
+                  └────────┬─────────┘
+                           │  publish LogBatch → Kafka
+                           ▼
+               ┌──────────────────────┐
+               │  Kafka: logs-raw     │  key = tenantID|serviceName
+               └──────────┬───────────┘
+                          │  consume (consumer group: stream-processor)
+                          ▼
+              ┌────────────────────────┐
+              │   stream-processor     │
+              │                        │  1. unmarshal LogBatch
+              │                        │  2. normalise each entry
+              │                        │     • validate tenantID + message
+              │                        │     • uppercase/default level
+              │                        │     • set event_timestamp if missing
+              │                        │  3. deduplicate via Redis SetNX
+              │                        │     (key = "dedup:{log_id}", TTL=5m)
+              │                        │  4. publish to logs-normalized
+              │                        │  5. bulk-index to OpenSearch
+              │                        │  6. archive to S3
+              │                        │  7. send failures → logs-dead-letter
+              └───┬──────────┬─────────┘
+                  │          │
+        ┌─────────┘          └──────────────────┐
+        │  bulk index                           │  gzip NDJSON upload
+        ▼                                       ▼
+┌──────────────────┐                  ┌──────────────────┐
+│   OpenSearch     │                  │       S3         │
+│ (hot storage)    │                  │ (cold archive)   │
+│ logs-{tenant}-   │                  │ {tenant}/yyyy/   │
+│ {yyyy-mm-dd}     │                  │ mm/dd/hh/        │
+│ doc ID = log_id  │                  │ part-{seq}.gz    │
+└──────────────────┘                  └──────────────────┘
+        ▲                                       ▲
+        │  Search(query)                        │  (cold path — stubbed)
+        │                                       │
+        └──────────┬────────────────────────────┘
+                   │
+          ┌────────────────┐
+          │   query-api    │  auth · routes by from timestamp:
+          │    :8081        │  • from within hot_retention_days → OpenSearch
+          └────────────────┘  • older → S3/Athena (stub, returns empty)
+                   ▲
+                   │  GET /logs/search
+                User
+
+               ┌──────────────────────────────────┐
+               │  Kafka: logs-normalized           │  key = tenantID|serviceName
+               └──────┬───────────────┬────────────┘
+                      │               │
+        consume        │               │  consume
+        (alert-engine) │               │  (tail-service)
+                      ▼               ▼
+           ┌──────────────┐   ┌────────────────┐
+           │ alert-engine │   │  tail-service  │
+           │              │   │    :8082        │
+           │ tumbling-    │   │                │
+           │ window rule  │   │  fan-out SSE   │
+           │ evaluation   │   │  per tenant    │
+           │              │   │  filter by     │
+           │ fires when   │   │  service/level │
+           │ count ≥      │   │                │
+           │ threshold    │   └────────────────┘
+           │              │          ▲
+           │ POST webhook │          │  GET /tail  (SSE)
+           └──────────────┘        User
+                  │
+           alert notification
+           (HTTP POST to webhook URL)
 ```
+
+### Kafka topics
+
+| Topic | Producer | Consumers | Partition key |
+|---|---|---|---|
+| `logs-raw` | ingestion-gateway | stream-processor | `tenantID\|serviceName` |
+| `logs-normalized` | stream-processor | alert-engine, tail-service | `tenantID\|serviceName` |
+| `logs-dead-letter` | stream-processor | ops / monitoring | — |
+
+### Storage layout
+
+| Store | Purpose | Key pattern |
+|---|---|---|
+| OpenSearch | Hot search (≤ `hot_retention_days`) | `logs-{tenant}-{yyyy-mm-dd}`, doc ID = `log_id` |
+| S3 | Cold archive (unlimited) | `{tenant}/{yyyy}/{mm}/{dd}/{hh}/part-{seq:05d}.gz` (gzip NDJSON) |
+| Redis | Deduplication cache | `dedup:{log_id}` with configurable TTL |
+
 
 ## Repository Layout
 
